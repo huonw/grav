@@ -3,11 +3,13 @@
 set -e -u -o pipefail
 
 PID=""
-while getopts ":p:" opt; do
+while getopts ":p:d:" opt; do
     case ${opt} in
         p ) 
             PID=$OPTARG
             ;;
+        d )
+            DURATION=$OPTARG
     esac
 done
 
@@ -19,17 +21,24 @@ if [[ "$PID" == "" ]]; then
 fi
 
 PERF_FLAME_OUTPUT="allocation-flamegraph-$PID.svg"
-export PERF_RECORD_SECONDS=1
+# add some extra time so that perf is recording for the entire
+# duration that we're profiling the heap, to ensure the map contains
+# all JIT'd functions that might appear.
+export PERF_RECORD_SECONDS=$(( ${DURATION:0} + 2 ))
 
 source $SCRIPT_DIR/validate-perf-map-agent.sh
 source $SCRIPT_DIR/options-perf-thread-flames.sh
 
-echo "Profiling application to generate stack trace symbols"
-$PERF_MAP_AGENT_DIR/bin/perf-java-record-stack "$PID"
 STACKS=$(mktemp)
 COLLAPSED=$(mktemp)
 
+echo "Generating stack trace symbols in background"
+$PERF_MAP_AGENT_DIR/bin/perf-java-record-stack "$PID" &
+sleep 1 # wait for perf to properly start
+
 sudo python $GRAV_DIR/src/heap/heap_profile.py $@ > $STACKS
+wait
+
 cat $STACKS | sudo python  $GRAV_DIR/src/heap/stacks_tidy.py $PERF_MAP_FILE > $COLLAPSED
 cat $COLLAPSED | $FLAMEGRAPH_DIR/flamegraph.pl --title "Heap Allocation Flame Graph" $PERF_FLAME_OPTS > $PERF_FLAME_OUTPUT && \
 echo "Wrote $PERF_FLAME_OUTPUT"
