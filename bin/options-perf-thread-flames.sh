@@ -24,6 +24,9 @@ AGGREGATE_ON_THREAD_PREFIX="${AGGREGATE_ON_THREAD_PREFIX:-False}"
 if [ "${PERF_DATA_FILE:-}" == "" ]; then
     PERF_DATA_FILE=$PERF_JAVA_TMP/perf-$PID.data
 fi
+if [ "${PERF_MAP_FILE:-}" == "" ]; then
+    PERF_MAP_FILE="${PERF_DATA_FILE/%.data/.map}"
+fi
 
 if [ "${PERF_FLAME_OUTPUT:-}" == "" ]; then
     PERF_FLAME_OUTPUT=flamegraph-$PID.svg

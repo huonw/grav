@@ -30,6 +30,6 @@ STACKS=$(mktemp)
 COLLAPSED=$(mktemp)
 
 sudo python $GRAV_DIR/src/heap/heap_profile.py $@ > $STACKS
-cat $STACKS | sudo python  $GRAV_DIR/src/heap/stacks_tidy.py $PERF_DATA_FILE > $COLLAPSED
+cat $STACKS | sudo python  $GRAV_DIR/src/heap/stacks_tidy.py $PERF_MAP_FILE > $COLLAPSED
 cat $COLLAPSED | $FLAMEGRAPH_DIR/flamegraph.pl --title "Heap Allocation Flame Graph" $PERF_FLAME_OPTS > $PERF_FLAME_OUTPUT && \
 echo "Wrote $PERF_FLAME_OUTPUT"
